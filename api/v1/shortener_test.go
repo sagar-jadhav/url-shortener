@@ -120,3 +120,61 @@ func Test_ShortenURL(t *testing.T) {
 		})
 	}
 }
+
+func Test_Redirect(t *testing.T) {
+	tests := []struct {
+		name      string
+		shortener Shortener
+		status    int
+		shortURL  string
+	}{
+		{
+			name: "short URL not found",
+			shortener: Shortener{
+				Datastore: &datastore.MemoryDatastore{
+					Data: map[string]string{},
+				},
+				ShortURLSize:         5,
+				Domain:               "http://localhost:3000/",
+				CollisionRetryCount:  5,
+				GenerateRandomString: utils.GenerateRandomString,
+			},
+			shortURL: "abcde",
+			status:   http.StatusNotFound,
+		},
+		{
+			name: "short URL present",
+			shortener: Shortener{
+				Datastore: &datastore.MemoryDatastore{
+					Data: map[string]string{
+						longURL: shortURL,
+					},
+				},
+				ShortURLSize:         5,
+				Domain:               "http://localhost:3000/",
+				CollisionRetryCount:  5,
+				GenerateRandomString: utils.GenerateRandomString,
+			},
+			shortURL: "abcde",
+			status:   http.StatusSeeOther,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// starting the server
+			r := chi.NewRouter()
+			r.Use(middleware.Logger)
+			r.Get("/{shortUrl}", test.shortener.Redirect)
+
+			req, _ := http.NewRequest(http.MethodGet, "/"+test.shortURL, nil)
+
+			rr := httptest.NewRecorder()
+			r.ServeHTTP(rr, req)
+
+			if rr.Code != test.status {
+				t.Fatalf("Redirect() => expected %d but got %d", test.status, rr.Code)
+			}
+		})
+	}
+}

@@ -55,6 +55,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Post("/", s.ShortenURL)
+	r.Get("/{shortUrl}", s.Redirect)
 
 	// starting the server
 	log.Printf("server is starting at %s:%s", appDomain, port)

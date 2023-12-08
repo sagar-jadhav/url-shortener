@@ -32,20 +32,20 @@ func Test_DoesLongURLExist(t *testing.T) {
 	}
 }
 
-func Test_Get(t *testing.T) {
+func Test_GetShortURL(t *testing.T) {
 	mds := MemoryDatastore{}
 	longURL1 := "https://localhost:3000/longurl1"
 	shortURL1 := "https://localhost:3000/shorturl1"
 	longURL2 := "https://localhost:3000/longurl2"
 	mds.Insert(longURL1, shortURL1)
 
-	_, err := mds.Get(longURL2)
+	_, err := mds.GetShortURL(longURL2)
 	if err == nil {
 		t.Fatal("Get() => expected error to be not nil")
 	}
 
 	var val string
-	val, err = mds.Get(longURL1)
+	val, err = mds.GetShortURL(longURL1)
 	if val != shortURL1 {
 		t.Fatalf("Get() => expected %s got %s", shortURL1, val)
 	}
@@ -63,5 +63,24 @@ func Test_DoesShortURLExist(t *testing.T) {
 	}
 	if err != nil {
 		t.Fatalf("DoesShortURLExist() => error not expected but got %v", err)
+	}
+}
+
+func Test_GetLongURL(t *testing.T) {
+	mds := MemoryDatastore{}
+	longURL1 := "https://localhost:3000/longurl1"
+	shortURL1 := "https://localhost:3000/shorturl1"
+	shortURL2 := "https://localhost:3000/shorturl2"
+	mds.Insert(longURL1, shortURL1)
+
+	_, err := mds.GetLongURL(shortURL2)
+	if err == nil {
+		t.Fatal("Get() => expected error to be not nil")
+	}
+
+	var val string
+	val, err = mds.GetLongURL(shortURL1)
+	if val != longURL1 {
+		t.Fatalf("Get() => expected %s got %s", longURL1, val)
 	}
 }

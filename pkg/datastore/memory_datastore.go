@@ -24,12 +24,25 @@ func (mds *MemoryDatastore) DoesLongURLExist(longURL string) (bool, error) {
 	return ok, nil
 }
 
-// Get returns the Short URL for the given Long URL from the Map
-func (mds *MemoryDatastore) Get(longURL string) (string, error) {
+// GetShortURL returns the Short URL for the given Long URL from the Map
+func (mds *MemoryDatastore) GetShortURL(longURL string) (string, error) {
 	if exist, _ := mds.DoesLongURLExist(longURL); !exist {
 		return "", fmt.Errorf("%s URL not exist in the map", longURL)
 	}
 	return mds.Data[longURL], nil
+}
+
+// GetLongURL returns the Long URL for the given Short URL from the Map
+func (mds *MemoryDatastore) GetLongURL(shortURL string) (string, error) {
+	if exist, _ := mds.DoesShortURLExist(shortURL); !exist {
+		return "", fmt.Errorf("%s URL not exist in the map", shortURL)
+	}
+	for longURL, url := range mds.Data {
+		if url == shortURL {
+			return longURL, nil
+		}
+	}
+	return "", nil
 }
 
 // DoesShortURLExist returns true if Short URL exists in the Map else return false

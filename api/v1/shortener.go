@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-chi/chi"
 	"github.com/sagar-jadhav/url-shortener/model"
 	"github.com/sagar-jadhav/url-shortener/pkg/datastore"
 )
@@ -41,7 +42,7 @@ func (s *Shortener) ShortenURL(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if longURLExist { // If long URL already exist then return the old short URL
-		if shortURL, err = s.Datastore.Get(reqBody.LongURL); err != nil {
+		if shortURL, err = s.Datastore.GetShortURL(reqBody.LongURL); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -73,5 +74,27 @@ func (s *Shortener) ShortenURL(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.Write(b)
+	return
+}
+
+// Redirect redirects short URL to the long URL
+func (s *Shortener) Redirect(w http.ResponseWriter, req *http.Request) {
+	shortURL := s.Domain + chi.URLParam(req, "shortUrl")
+
+	var shortURLExist bool
+	var err error
+	if shortURLExist, err = s.Datastore.DoesShortURLExist(shortURL); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	if !shortURLExist {
+		http.Error(w, fmt.Sprintf("short URL %s not found", shortURL), http.StatusNotFound)
+	} else {
+		var longURL string
+		if longURL, err = s.Datastore.GetLongURL(shortURL); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else {
+			http.Redirect(w, req, longURL, http.StatusSeeOther)
+		}
+	}
 	return
 }
