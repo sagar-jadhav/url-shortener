@@ -11,11 +11,12 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/sagar-jadhav/url-shortener/model"
 	"github.com/sagar-jadhav/url-shortener/pkg/datastore"
+	"github.com/sagar-jadhav/url-shortener/pkg/utils"
 )
 
 var (
-	longURL  = "https://github.com/sagar-jadhav"
-	shortURL = "https://localhost:3000/abcde"
+	longURL  = "http://github.com/sagar-jadhav"
+	shortURL = "http://localhost:3000/abcde"
 )
 
 func Test_ShortenURL(t *testing.T) {
@@ -26,7 +27,7 @@ func Test_ShortenURL(t *testing.T) {
 		status    int
 	}{
 		{
-			name: "longURL in request body is empty",
+			name: "long URL in request body is empty",
 			reqBody: &model.Request{
 				LongURL: "",
 			},
@@ -34,13 +35,15 @@ func Test_ShortenURL(t *testing.T) {
 				Datastore: &datastore.MemoryDatastore{
 					Data: map[string]string{},
 				},
-				ShortURLSize: 5,
-				Domain:       "http://localhost:3000/",
+				ShortURLSize:         5,
+				Domain:               "http://localhost:3000/",
+				CollisionRetryCount:  5,
+				GenerateRandomString: utils.GenerateRandomString,
 			},
 			status: http.StatusInternalServerError,
 		},
 		{
-			name: "longURL exist in the memory",
+			name: "long URL exist in the memory",
 			reqBody: &model.Request{
 				LongURL: longURL,
 			},
@@ -50,13 +53,15 @@ func Test_ShortenURL(t *testing.T) {
 						longURL: shortURL,
 					},
 				},
-				ShortURLSize: 5,
-				Domain:       "http://localhost:3000/",
+				ShortURLSize:         5,
+				Domain:               "http://localhost:3000/",
+				CollisionRetryCount:  5,
+				GenerateRandomString: utils.GenerateRandomString,
 			},
 			status: http.StatusOK,
 		},
 		{
-			name: "longURL not exist in the memory",
+			name: "long URL & short URL not exist in the memory",
 			reqBody: &model.Request{
 				LongURL: longURL,
 			},
@@ -64,10 +69,32 @@ func Test_ShortenURL(t *testing.T) {
 				Datastore: &datastore.MemoryDatastore{
 					Data: map[string]string{},
 				},
-				ShortURLSize: 5,
-				Domain:       "http://localhost:3000/",
+				ShortURLSize:         5,
+				Domain:               "http://localhost:3000/",
+				CollisionRetryCount:  5,
+				GenerateRandomString: utils.GenerateRandomString,
 			},
 			status: http.StatusOK,
+		},
+		{
+			name: "short URL exist in the memory",
+			reqBody: &model.Request{
+				LongURL: longURL,
+			},
+			shortener: Shortener{
+				Datastore: &datastore.MemoryDatastore{
+					Data: map[string]string{
+						longURL + "/url-shortener": shortURL,
+					},
+				},
+				ShortURLSize:        5,
+				Domain:              "http://localhost:3000/",
+				CollisionRetryCount: 5,
+				GenerateRandomString: func(i int) string {
+					return "abcde"
+				},
+			},
+			status: http.StatusInternalServerError,
 		},
 	}
 

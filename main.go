@@ -12,9 +12,13 @@ import (
 
 	v1 "github.com/sagar-jadhav/url-shortener/api/v1"
 	"github.com/sagar-jadhav/url-shortener/pkg/datastore"
+	"github.com/sagar-jadhav/url-shortener/pkg/utils"
 )
 
-const DEFAULT_SHORT_URL_SIZE = 5
+const (
+	DEFAULT_SHORT_URL_SIZE = 5
+	COLLISION_RETRY_COUNT  = 5
+)
 
 func main() {
 	// load environment variables
@@ -26,16 +30,25 @@ func main() {
 	port := os.Getenv("PORT")
 	shortURLSizeStr := os.Getenv("SHORT_URL_SIZE")
 	scheme := os.Getenv("SCHEME")
+	collisionRetryCountStr := os.Getenv("COLLISION_RETRY_COUNT")
+
 	var shortURLSize int
 	if shortURLSize, err = strconv.Atoi(shortURLSizeStr); err != nil {
 		log.Printf("error converting short URL size %s. So setting it to %d", shortURLSizeStr, DEFAULT_SHORT_URL_SIZE)
 	}
 
+	var collisionRetryCount int
+	if collisionRetryCount, err = strconv.Atoi(collisionRetryCountStr); err != nil {
+		log.Printf("error converting collision retry count %s. So setting it to %d", collisionRetryCountStr, COLLISION_RETRY_COUNT)
+	}
+
 	// Initialising the shortener service
 	s := v1.Shortener{
-		Datastore:    &datastore.MemoryDatastore{},
-		ShortURLSize: shortURLSize,
-		Domain:       scheme + "://" + appDomain + ":" + port + "/",
+		Datastore:            &datastore.MemoryDatastore{},
+		ShortURLSize:         shortURLSize,
+		CollisionRetryCount:  collisionRetryCount,
+		Domain:               scheme + "://" + appDomain + ":" + port + "/",
+		GenerateRandomString: utils.GenerateRandomString,
 	}
 
 	// set up the server

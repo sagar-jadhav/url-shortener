@@ -7,13 +7,14 @@ import (
 
 	"github.com/sagar-jadhav/url-shortener/model"
 	"github.com/sagar-jadhav/url-shortener/pkg/datastore"
-	"github.com/sagar-jadhav/url-shortener/pkg/utils"
 )
 
 type Shortener struct {
-	Datastore    datastore.Datastore
-	ShortURLSize int
-	Domain       string
+	Datastore            datastore.Datastore
+	ShortURLSize         int
+	Domain               string
+	CollisionRetryCount  int
+	GenerateRandomString func(int) string
 }
 
 // ShortenURL generates the short URL and store it into memory
@@ -33,19 +34,33 @@ func (s *Shortener) ShortenURL(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var shortURL string
-	var exist bool
-	if exist, err = s.Datastore.Exist(reqBody.LongURL); err != nil {
+	var longURLExist bool
+	if longURLExist, err = s.Datastore.DoesLongURLExist(reqBody.LongURL); err != nil {
 		http.Error(w, fmt.Sprintf("error in checking whether the long URL %s is exist in the memory or not: %v", reqBody.LongURL, err), http.StatusInternalServerError)
 		return
 	}
 
-	if exist { // If long URL already exist then return the old short URL
+	if longURLExist { // If long URL already exist then return the old short URL
 		if shortURL, err = s.Datastore.Get(reqBody.LongURL); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else { // else generate the short URL and then insert it into memory
-		shortURL = s.Domain + utils.GenerateRandomString(s.ShortURLSize)
+		shortURLExist := false
+		// validate that short URL should not be present in the memory
+		for i := 0; i < s.CollisionRetryCount; i++ {
+			shortURL = s.Domain + s.GenerateRandomString(s.ShortURLSize)
+			if shortURLExist, err = s.Datastore.DoesShortURLExist(shortURL); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			if !shortURLExist {
+				break
+			}
+		}
+		if shortURLExist {
+			http.Error(w, fmt.Sprintf("short URL %s already exist in the memory and all the %d retries also exhausted. So please call the api again.", shortURL, s.CollisionRetryCount), http.StatusInternalServerError)
+			return
+		}
 		s.Datastore.Insert(reqBody.LongURL, shortURL)
 	}
 	resp := model.Response{

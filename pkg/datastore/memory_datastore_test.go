@@ -17,18 +17,18 @@ func Test_Insert(t *testing.T) {
 	}
 }
 
-func Test_Exist(t *testing.T) {
+func Test_DoesLongURLExist(t *testing.T) {
 	mds := MemoryDatastore{}
 	longURL := "https://localhost:3000/longurl"
 	shortURL := "https://localhost:3000/shorturl"
 	mds.Insert(longURL, shortURL)
 
-	exist, err := mds.Exist(longURL)
+	exist, err := mds.DoesLongURLExist(longURL)
 	if !exist {
-		t.Fatal("Exist() => expected data to be inserted into the map but data not present")
+		t.Fatal("DoesLongURLExist() => expected long URL to be present in the map but its not present")
 	}
 	if err != nil {
-		t.Fatalf("Exist() => error not expected but got %v", err)
+		t.Fatalf("DoesLongURLExist() => error not expected but got %v", err)
 	}
 }
 
@@ -48,5 +48,20 @@ func Test_Get(t *testing.T) {
 	val, err = mds.Get(longURL1)
 	if val != shortURL1 {
 		t.Fatalf("Get() => expected %s got %s", shortURL1, val)
+	}
+}
+
+func Test_DoesShortURLExist(t *testing.T) {
+	mds := MemoryDatastore{}
+	longURL := "https://localhost:3000/longurl"
+	shortURL := "https://localhost:3000/shorturl"
+	mds.Insert(longURL, shortURL)
+
+	exist, err := mds.DoesShortURLExist(shortURL)
+	if !exist {
+		t.Fatal("DoesShortURLExist() => expected short URL to be present in the map but its not present")
+	}
+	if err != nil {
+		t.Fatalf("DoesShortURLExist() => error not expected but got %v", err)
 	}
 }
