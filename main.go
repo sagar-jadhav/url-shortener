@@ -60,5 +60,5 @@ func main() {
 
 	// starting the server
 	log.Printf("server is starting at %s:%s", appDomain, port)
-	log.Fatal(http.ListenAndServe(appDomain+":"+port, r))
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }
