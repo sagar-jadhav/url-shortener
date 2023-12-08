@@ -56,6 +56,7 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Post("/", s.ShortenURL)
 	r.Get("/{shortUrl}", s.Redirect)
+	r.Get("/metrics", s.GetMetrics)
 
 	// starting the server
 	log.Printf("server is starting at %s:%s", appDomain, port)

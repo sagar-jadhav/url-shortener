@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/sagar-jadhav/url-shortener/model"
 	"github.com/sagar-jadhav/url-shortener/pkg/datastore"
+	"github.com/sagar-jadhav/url-shortener/pkg/metrics"
 	"github.com/sagar-jadhav/url-shortener/pkg/utils"
 )
 
@@ -39,6 +40,7 @@ func Test_ShortenURL(t *testing.T) {
 				Domain:               "http://localhost:3000/",
 				CollisionRetryCount:  5,
 				GenerateRandomString: utils.GenerateRandomString,
+				Metrics:              metrics.DomainMetrics{},
 			},
 			status: http.StatusInternalServerError,
 		},
@@ -57,8 +59,24 @@ func Test_ShortenURL(t *testing.T) {
 				Domain:               "http://localhost:3000/",
 				CollisionRetryCount:  5,
 				GenerateRandomString: utils.GenerateRandomString,
+				Metrics:              metrics.DomainMetrics{},
 			},
 			status: http.StatusOK,
+		},
+		{
+			name: "invalid long URL",
+			reqBody: &model.Request{
+				LongURL: "invalidurl",
+			},
+			shortener: Shortener{
+				Datastore:            &datastore.MemoryDatastore{},
+				ShortURLSize:         5,
+				Domain:               "http://localhost:3000/",
+				CollisionRetryCount:  5,
+				GenerateRandomString: utils.GenerateRandomString,
+				Metrics:              metrics.DomainMetrics{},
+			},
+			status: http.StatusBadRequest,
 		},
 		{
 			name: "long URL & short URL not exist in the memory",
@@ -73,6 +91,7 @@ func Test_ShortenURL(t *testing.T) {
 				Domain:               "http://localhost:3000/",
 				CollisionRetryCount:  5,
 				GenerateRandomString: utils.GenerateRandomString,
+				Metrics:              metrics.DomainMetrics{},
 			},
 			status: http.StatusOK,
 		},
@@ -93,6 +112,7 @@ func Test_ShortenURL(t *testing.T) {
 				GenerateRandomString: func(i int) string {
 					return "abcde"
 				},
+				Metrics: metrics.DomainMetrics{},
 			},
 			status: http.StatusInternalServerError,
 		},
@@ -138,6 +158,7 @@ func Test_Redirect(t *testing.T) {
 				Domain:               "http://localhost:3000/",
 				CollisionRetryCount:  5,
 				GenerateRandomString: utils.GenerateRandomString,
+				Metrics:              metrics.DomainMetrics{},
 			},
 			shortURL: "abcde",
 			status:   http.StatusNotFound,
@@ -154,6 +175,7 @@ func Test_Redirect(t *testing.T) {
 				Domain:               "http://localhost:3000/",
 				CollisionRetryCount:  5,
 				GenerateRandomString: utils.GenerateRandomString,
+				Metrics:              metrics.DomainMetrics{},
 			},
 			shortURL: "abcde",
 			status:   http.StatusSeeOther,
@@ -174,6 +196,47 @@ func Test_Redirect(t *testing.T) {
 
 			if rr.Code != test.status {
 				t.Fatalf("Redirect() => expected %d but got %d", test.status, rr.Code)
+			}
+		})
+	}
+}
+
+func Test_GetMetrics(t *testing.T) {
+	tests := []struct {
+		name      string
+		shortener Shortener
+		status    int
+	}{
+		{
+			name: "metrics is empty",
+			shortener: Shortener{
+				Datastore: &datastore.MemoryDatastore{
+					Data: map[string]string{},
+				},
+				ShortURLSize:         5,
+				Domain:               "http://localhost:3000/",
+				CollisionRetryCount:  5,
+				GenerateRandomString: utils.GenerateRandomString,
+				Metrics:              metrics.DomainMetrics{},
+			},
+			status: http.StatusOK,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// starting the server
+			r := chi.NewRouter()
+			r.Use(middleware.Logger)
+			r.Get("/metrics", test.shortener.GetMetrics)
+
+			req, _ := http.NewRequest(http.MethodGet, "/metrics", nil)
+
+			rr := httptest.NewRecorder()
+			r.ServeHTTP(rr, req)
+
+			if rr.Code != test.status {
+				t.Fatalf("ShortenURL() => expected %d but got %d", test.status, rr.Code)
 			}
 		})
 	}

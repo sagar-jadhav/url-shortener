@@ -45,3 +45,46 @@ func Test_ValidateURL(t *testing.T) {
 		})
 	}
 }
+
+func Test_GetDomainName(t *testing.T) {
+	tests := []struct {
+		url    string
+		domain string
+	}{
+		{
+			url:    "https://github.com/sagar-jadhav/",
+			domain: "github.com",
+		},
+		{
+			url:    "http://github.com/sagar-jadhav/",
+			domain: "github.com",
+		},
+		{
+			url:    "www.github.com/sagar-jadhav/",
+			domain: "github.com",
+		},
+		{
+			url:    "https://www.github.com/sagar-jadhav/",
+			domain: "github.com",
+		},
+		{
+			url:    "github.com/sagar-jadhav/",
+			domain: "github.com",
+		},
+		{
+			url:    "github.com/",
+			domain: "github.com",
+		},
+		{
+			url:    "github.com",
+			domain: "github.com",
+		},
+	}
+
+	for _, test := range tests {
+		domain := GetDomainName(test.url)
+		if domain != test.domain {
+			t.Fatalf("GetDomainName => expected %s but got %s for %s url", test.domain, domain, test.url)
+		}
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	math_rand "math/rand"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -35,4 +36,25 @@ func GenerateRandomString(length int) string {
 func ValidateURL(urlStr string) bool {
 	r, _ := regexp.Compile("^(http:\\/\\/www\\.|https:\\/\\/www\\.|http:\\/\\/|https:\\/\\/|\\/|\\/\\/)?[A-z0-9_-]*?[:]?[A-z0-9_-]*?[@]?[A-z0-9]+([\\-\\.]{1}[a-z0-9]+)*\\.[a-z]{2,5}(:[0-9]{1,5})?(\\/.*)?$")
 	return r.Match([]byte(urlStr))
+}
+
+// GetDomainName returns the domain name of the URL
+func GetDomainName(url string) string {
+	var domain string
+	if strings.HasPrefix(url, "http://") {
+		domain = strings.TrimPrefix(url, "http://")
+	} else if strings.HasPrefix(url, "https://") {
+		domain = strings.TrimPrefix(url, "https://")
+	} else {
+		domain = url
+	}
+
+	if strings.HasPrefix(domain, "www") {
+		domain = strings.TrimPrefix(domain, "www.")
+	}
+
+	if strings.Contains(domain, "/") {
+		return strings.Split(domain, "/")[0]
+	}
+	return domain
 }

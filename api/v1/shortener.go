@@ -8,6 +8,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/sagar-jadhav/url-shortener/model"
 	"github.com/sagar-jadhav/url-shortener/pkg/datastore"
+	"github.com/sagar-jadhav/url-shortener/pkg/metrics"
+	"github.com/sagar-jadhav/url-shortener/pkg/utils"
 )
 
 type Shortener struct {
@@ -16,6 +18,7 @@ type Shortener struct {
 	Domain               string
 	CollisionRetryCount  int
 	GenerateRandomString func(int) string
+	Metrics              metrics.DomainMetrics
 }
 
 // ShortenURL generates the short URL and store it into memory
@@ -30,7 +33,10 @@ func (s *Shortener) ShortenURL(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if len(reqBody.LongURL) == 0 {
-		http.Error(w, "longURL is required", http.StatusInternalServerError)
+		http.Error(w, "long URL is required", http.StatusInternalServerError)
+		return
+	} else if !utils.ValidateURL(reqBody.LongURL) {
+		http.Error(w, fmt.Sprintf("long URL %s is invalid", reqBody.LongURL), http.StatusBadRequest)
 		return
 	}
 
@@ -62,6 +68,12 @@ func (s *Shortener) ShortenURL(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, fmt.Sprintf("short URL %s already exist in the memory and all the %d retries also exhausted. So please call the api again.", shortURL, s.CollisionRetryCount), http.StatusInternalServerError)
 			return
 		}
+
+		// adding domain metrics
+		domain := utils.GetDomainName(reqBody.LongURL)
+		s.Metrics.Add(domain)
+
+		// inserting the data
 		s.Datastore.Insert(reqBody.LongURL, shortURL)
 	}
 	resp := model.Response{
@@ -96,5 +108,29 @@ func (s *Shortener) Redirect(w http.ResponseWriter, req *http.Request) {
 			http.Redirect(w, req, longURL, http.StatusSeeOther)
 		}
 	}
+	return
+}
+
+// GetMetrics returns the sorted metrics based on the shortened count per domain
+func (s *Shortener) GetMetrics(w http.ResponseWriter, req *http.Request) {
+	// sort the metrics
+	sortedMetrics := s.Metrics.Sort()
+
+	var b []byte
+	var err error
+	var result []metrics.Metric
+
+	// get the first 3 domain metrics
+	if len(sortedMetrics) > 3 {
+		result = sortedMetrics[:3]
+	} else {
+		result = sortedMetrics
+	}
+
+	if b, err = json.Marshal(result); err != nil {
+		http.Error(w, fmt.Sprintf("error in parsing the response: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.Write(b)
 	return
 }
