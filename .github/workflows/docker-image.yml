@@ -14,3 +14,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build Local Container
+        uses: docker/build-push-action@v4
+        with:
+          tags: developersthought/url-shortener:v5.5
+          push: true
+          load: true
