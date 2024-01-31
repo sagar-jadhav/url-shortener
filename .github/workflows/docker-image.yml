@@ -19,4 +19,3 @@ jobs:
         with:
           tags: developersthought/url-shortener:v5.5
           push: true
-          load: true
