@@ -80,7 +80,7 @@ curl --location 'http://localhost:3000/metrics'
 
 **Note:**
 
-I have already pushed the image to DockerHub So If you want to run the application without building it then run the following command:
+I have already pushed the image to DockerHub So If you want to run the application without building it then run the following command: 
 
 ```bash
 docker run -d -p 3000:3000  --name url-shortener developersthought/url-shortener:1.0
