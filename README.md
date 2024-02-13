@@ -1,7 +1,7 @@
 [![ci](https://github.com/sagar-jadhav/url-shortener/actions/workflows/docker-image.yml/badge.svg?branch=main)](https://github.com/sagar-jadhav/url-shortener/actions/workflows/docker-image.yml)
 
 # URL Shortener written in Golang
-
+ 
 ## Prerequisites
 
 - Golang
