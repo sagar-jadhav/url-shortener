@@ -22,7 +22,7 @@ make run
 
 ## Steps to run the server in Docker container
 
-- Run the following command to build the Docker image:
+- Run the following command to build the Docker image: 
 
   ```bash
   make docker-build
