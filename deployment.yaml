@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: nginx-latest-yml
   labels:
-    app: nginx-yml12h
+    app: nginx-yml12hn
 spec:
   replicas: 1
   selector:
