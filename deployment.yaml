@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: nginx-yml
-        image: nginx:latest
+        image: nginx:v1.0
         ports:
         - containerPort: 80
