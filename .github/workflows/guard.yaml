@@ -15,26 +15,4 @@ jobs:
         id: ksoc-guard
         uses: ksoclabs/guard-action@v0.0.10
         with:
-          ksoc_account_id: <KSOC_ACCOUNT_ID>
-          ksoc_access_key_id: ${{ secrets.KSOC_ACCESS_KEY_ID }}
-          ksoc_secret_key: ${{ secrets.KSOC_SECRET_KEY }}
-      - name: comment
-        if: success() || failure()
-        uses: actions/github-script@v6
-        env:
-          STATUS: ${{ steps.ksoc-guard.outcome == 'success' && 'success ✅' || 'failure ❌' }}
-        with:
-          script: |
-            const output = `
-              Policy Executor: ${{ env.STATUS }}
-
-              \`\`\`
-              ${{ steps.ksoc-guard.outputs.results }}
-              \`\`\`
-              `
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
+          policy_dir: /policies
