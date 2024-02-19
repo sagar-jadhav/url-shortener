@@ -1,0 +1,83 @@
+kind: GuardPolicy
+apiVersion: ksoc.com/v1alpha1
+metadata:
+  name: policy-0007-image-latest
+  namespace: ksoc
+  annotations:
+    ksoc.com/customTemplateID: KSOC-K8S-IMAGE-LATEST
+    ksoc.com/tag_status: published
+    ksoc.com/tag_category: workload security
+    ksoc.com/tag_compliance_list: |-
+      '{"nsaHardeningGuideline":"",
+      "cis-k8s-v1.23-benchmark":"",
+      "cis-eks-v1.1.0-benchmark":"",
+      "cis-aks-v1.1.0-benchmark":"",
+      "cis-gke-v1.2.0-benchmark":"",
+      "cis-control-v8":"",
+      "cis-controls-v8-name":""
+      }'
+spec:
+  block: false
+  match:
+  - apiVersion: apps/v1
+    kind: Deployment
+  - apiVersion: apps/v1
+    kind: Cronjob
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+  - apiVersion: apps/v1
+    kind: DaemonSet
+  - apiVersion: apps/v1
+    kind: StatefulSet
+  - apiVersion: apps/v1
+    kind: Job
+  - apiVersion: v1
+    kind: Pod
+  severity: low
+  title: Container(s) image tag is set to latest
+  description: "The :latest tag is used to indicate that the image is the latest version of the image. This tag is not recommended for use in production as it is more difficult to track the exact version of the image running. Containers discovered where image is set as latest should be set as a specific version and update them when new versions are available that have been evaluated for security and application compatibility."
+  rego: |-
+    package ksoc
+    import future.keywords.in
+    violation[{"msg": msg, "patch": r_patch}] {
+      #extract the containers and the json path to containers
+      containers := extractcontainers(input.kind)
+
+      imagename := sprintf("%s:<KSOC_SPECIFIC_IMAGE_VERSION>",[imageLatest(containers[0][i].image)])
+
+      patchpath := sprintf("%s/%v/image", [containers[1],i])
+
+      #construct the patch syntax
+      patch := [{
+        "op": "replace",
+        "path": patchpath,
+        "value": imagename,
+      }]
+
+      r_patch := patch
+      msg := sprintf("%s %s container %s uses image %s tagged with latest.", [input.kind, input.metadata.name, containers[0][i].name, containers[0][i].image])
+    }
+    extractcontainers(eval_resource) := containers {
+      eval_resource == "CronJob"
+      containers := [input.spec.jobTemplate.spec.template.spec.containers, "/spec/jobTemplate/spec/template/spec/containers"]
+    } else := containers {
+      eval_resourceGroup := {"Deployment", "ReplicaSet", "DaemonSet", "StatefulSet", "Job"}
+      eval_resourceGroup[eval_resource]
+      containers := [input.spec.template.spec.containers, "/spec/template/spec/containers"]
+    } else := containers {
+      eval_resource == "Pod"
+      containers := [input.spec.containers, "/spec/containers"]
+    }
+
+    imageLatest(image) := imagename {
+      endswith(image, ":latest")
+      imagesplit := split(image, ":")
+      imagename := imagesplit[0]
+    }
+    #If you don't specify a tag, Kubernetes assumes you mean the tag latest.
+    #Also check for use of image digest which is pinned to a specific version.
+    imageLatest(image) := imagename {
+      not contains(image, ":")
+      not contains(image, "@")
+      imagename := image
+    }
