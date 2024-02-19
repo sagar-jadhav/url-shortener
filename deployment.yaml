@@ -4,6 +4,7 @@ metadata:
   name: nginx-latest-yml
   labels:
     app: nginx
+    purpose: demo
 spec:
   replicas: 1
   selector:
