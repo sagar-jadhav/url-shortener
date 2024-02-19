@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: nginx-latest-yml
   labels:
-    app: nginx-yml12hnjfkdnccckeddkcll
+    app: nginx
 spec:
   replicas: 1
   selector:
@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: nginx-yml
-        image: nginx:latest
+        image: nginx:v1.0
         ports:
         - containerPort: 80
