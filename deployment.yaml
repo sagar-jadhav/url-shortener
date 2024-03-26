@@ -4,7 +4,7 @@ metadata:
   name: nginx-latest-yml
   labels:
     app: nginx
-    purpose: test
+    purpose: demo-test-12344edee1weees
 spec:
   replicas: 1
   selector:
@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: nginx-yml
-        image: nginx:v1.0
+        image: nginx:latest
         ports:
         - containerPort: 80
